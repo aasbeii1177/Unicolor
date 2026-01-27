@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0f172a">
-  <title>PrintTrack Pro | Industrial Dispatch</title>
+  <title>Unicolor | Warehouse Dispatch</title>
   <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2821/2821898.png">
   
@@ -24,7 +24,7 @@
       .print-only { display: block !important; }
       body { background: white !important; color: black !important; padding: 0 !important; overflow: visible !important; }
       .h-screen { height: auto !important; overflow: visible !important; }
-      @page { margin: 1.5cm; }
+      @page { margin: 1cm; }
     }
     
     .print-only { display: none; }
@@ -57,6 +57,7 @@
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react/": "https://esm.sh/react@^19.2.4/"
   }
 }
@@ -64,17 +65,19 @@
 </head>
 <body class="bg-slate-50 text-slate-900 overflow-hidden h-screen flex">
 
-  <!-- Environment Root -->
-  <div id="root" class="hidden"></div>
-
   <!-- Sidebar -->
   <aside id="sidebar" class="w-20 lg:w-64 bg-slate-900 text-white flex flex-col no-print transition-all duration-300 shrink-0">
     <div class="p-6 flex flex-col items-center lg:items-start gap-4 border-b border-slate-800 mb-6">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-900/20">
-          <i class="fas fa-print text-xl"></i>
+        <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg overflow-hidden p-1">
+          <svg viewBox="0 0 140 140" class="w-full h-full">
+            <path d="M25,35 V65 C25,85 50,85 50,65 V35" fill="none" stroke="#F9BD15" stroke-width="15" stroke-linecap="round"/>
+            <path d="M50,65 V55 C50,35 75,35 75,55 V85" fill="none" stroke="#4FB5B3" stroke-width="15" stroke-linecap="round"/>
+            <path d="M100,55 V85" stroke="#E85141" stroke-width="15" stroke-linecap="round"/>
+            <circle cx="100" cy="30" r="8" fill="#E85141"/>
+          </svg>
         </div>
-        <span class="hidden lg:block text-xl font-black tracking-tighter uppercase">PrintTrack</span>
+        <span class="hidden lg:block text-xl font-black tracking-tighter uppercase">Unicolor</span>
       </div>
       
       <button onclick="toggleAdmin()" id="admin-btn" class="w-full flex items-center gap-3 p-2.5 rounded-xl transition-all border-2 bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-500">
@@ -108,7 +111,7 @@
         <i class="fas fa-circle text-[6px] text-emerald-500 animate-pulse"></i>
         <span class="text-[10px] font-black uppercase tracking-widest">System Online</span>
       </div>
-      <div class="text-[9px] text-slate-700 hidden lg:block px-1">Factory Pro v3.1</div>
+      <div class="text-[9px] text-slate-700 hidden lg:block px-1">Unicolor v4.0</div>
     </div>
   </aside>
 
@@ -116,24 +119,19 @@
   <main class="flex-1 flex flex-col min-w-0 relative h-full overflow-hidden">
     <div id="admin-stripe" class="hidden absolute top-0 left-0 right-0 h-1 bg-amber-500 z-[60] no-print"></div>
 
-    <!-- Header -->
     <header class="p-4 lg:p-8 border-b border-slate-200 bg-white no-print shrink-0">
       <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div>
-          <h1 id="page-title" class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-            Dashboard
-          </h1>
-        </div>
+        <h1 id="page-title" class="text-2xl font-black text-slate-800 tracking-tight">Dashboard</h1>
         
         <div class="flex flex-1 w-full lg:w-auto items-center gap-3 max-w-2xl">
-          <div class="relative flex-1 group">
-            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors"></i>
+          <div class="relative flex-1">
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
             <input 
               id="global-search"
               type="text"
               oninput="handleSearch(this.value)"
-              placeholder="Search products or scan code..."
-              class="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium text-sm"
+              placeholder="Search products..."
+              class="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 outline-none transition-all font-medium text-sm"
             >
           </div>
 
@@ -143,29 +141,28 @@
               onchange="handleCustomerChange(this.value)"
               class="bg-white border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-4 focus:ring-blue-100 outline-none font-bold text-sm min-w-[160px] shadow-sm"
             >
-              <option value="">All Customers</option>
+              <option value="">Select Customer</option>
             </select>
           </div>
 
-          <button id="export-btn" onclick="exportData()" class="hidden p-2.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
+          <button id="export-btn" onclick="exportData()" class="hidden p-2.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl hover:bg-emerald-600 hover:text-white transition-all">
             <i class="fas fa-file-export"></i>
           </button>
         </div>
       </div>
     </header>
 
-    <!-- App Views -->
-    <div class="flex-1 overflow-y-auto p-4 lg:p-8" id="view-container">
-      <!-- Views will be injected here via JS -->
-    </div>
+    <div class="flex-1 overflow-y-auto p-4 lg:p-8" id="view-container"></div>
   </main>
 
-  <!-- Modals -->
+  <!-- Modals & Print Area -->
   <div id="modal-container"></div>
-  <div id="print-receipt" class="print-only fixed inset-0 bg-white p-10 text-black z-[100]"></div>
+  <div id="print-receipt" class="print-only"></div>
 
   <script>
-    // --- State Management ---
+    // --- Initial Data & State ---
+    const STORAGE_KEY = 'UNICOLOR_V4_STORAGE';
+    
     let state = {
       activeTab: 'dashboard',
       inventorySubTab: 'stock',
@@ -173,44 +170,29 @@
       searchQuery: '',
       selectedCustomer: '',
       loadingCart: [],
-      currentReceipt: null,
-      customers: [],
-      products: [],
+      customers: [
+        { id: 'c1', name: 'PharmaCore Global' },
+        { id: 'c2', name: 'BioHealth Labs' }
+      ],
+      products: [
+        { id: 'p1', name: 'Amoxicillin Carton', code: 'CRT-001', type: 'Carton', customer: 'PharmaCore Global', availableQuantity: 5000 },
+        { id: 'p2', name: 'Paracetamol Foil', code: 'BLS-002', type: 'Blister Aluminum', customer: 'PharmaCore Global', availableQuantity: 12500 },
+        { id: 'p3', name: 'Vitamin Label', code: 'LBL-010', type: 'Label', customer: 'BioHealth Labs', availableQuantity: 25000 }
+      ],
       sessions: []
     };
 
-    const MOCK_CUSTOMERS = [
-      { id: 'c1', name: 'PharmaCore Global' },
-      { id: 'c2', name: 'BioHealth Labs' },
-      { id: 'c3', name: 'NutriSafe Inc.' }
-    ];
-
-    const MOCK_PRODUCTS = [
-      { id: 'p1', name: 'Amoxicillin Carton', code: 'CRT-001', type: 'Carton', customer: 'PharmaCore Global', availableQuantity: 5000, lastProcess: 'Folder Gluer' },
-      { id: 'p2', name: 'Paracetamol Foil', code: 'BLS-002', type: 'Blister Aluminum', customer: 'PharmaCore Global', availableQuantity: 12500, lastProcess: 'Packing' },
-      { id: 'p3', name: 'Vitamin Label', code: 'LBL-010', type: 'Label', customer: 'BioHealth Labs', availableQuantity: 25000, lastProcess: 'Slitting' }
-    ];
-
-    const STORAGE_KEY = 'PRINTTRACK_DATA_V3_1';
-
     function init() {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        state = { ...state, ...JSON.parse(saved) };
-      } else {
-        state.products = MOCK_PRODUCTS;
-        state.customers = MOCK_CUSTOMERS;
-        save();
-      }
+      if (saved) state = { ...state, ...JSON.parse(saved) };
       render();
     }
 
     function save() {
-      const { products, customers, sessions } = state;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ products, customers, sessions }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
 
-    // --- Tab Controllers ---
+    // --- State Actions ---
     function switchTab(tab) {
       state.activeTab = tab;
       state.searchQuery = '';
@@ -218,14 +200,8 @@
       render();
     }
 
-    function switchInventorySubTab(sub) {
-      state.inventorySubTab = sub;
-      render();
-    }
-
-    // --- Search & Filter Logic ---
     function handleSearch(val) {
-      state.searchQuery = val;
+      state.searchQuery = val.toLowerCase();
       render();
     }
 
@@ -234,132 +210,110 @@
       render();
     }
 
-    // --- Dispatch Logic ---
-    function addToCart(productId, qty) {
-      const product = state.products.find(p => p.id === productId);
-      if (!product || qty <= 0) return;
-      if (product.availableQuantity < qty) {
-        alert("Stock insufficient.");
-        return;
-      }
-
-      const existing = state.loadingCart.find(i => i.productId === productId);
-      if (existing) {
-        existing.quantity += qty;
-      } else {
-        state.loadingCart.push({
-          productId: product.id,
-          productName: product.name,
-          productCode: product.code,
-          quantity: qty
-        });
-      }
-      product.availableQuantity -= qty;
-      render();
-    }
-
-    function removeFromCart(productId) {
-      const item = state.loadingCart.find(i => i.productId === productId);
-      if (item) {
-        const product = state.products.find(p => p.id === productId);
-        if (product) product.availableQuantity += item.quantity;
-        state.loadingCart = state.loadingCart.filter(i => i.productId !== productId);
-      }
-      render();
-    }
-
-    function finalizeDispatch() {
-      if (state.loadingCart.length === 0 || !state.selectedCustomer) return;
-      const newSession = {
-        id: 's-' + Date.now(),
-        customerName: state.selectedCustomer,
-        items: [...state.loadingCart],
-        timestamp: new Date().toLocaleString(),
-        receiptNumber: (state.sessions.length + 1).toString().padStart(4, '0')
-      };
-      state.sessions.unshift(newSession);
-      state.loadingCart = [];
-      state.selectedCustomer = '';
-      save();
-      render();
-      showReceipt(newSession);
-    }
-
-    // --- Inventory Management Logic ---
-    function addCustomer(e) {
-      if (e) e.preventDefault();
-      const name = document.getElementById('new-customer-input').value.trim();
-      if (!name) return;
-      if (state.customers.some(c => c.name.toLowerCase() === name.toLowerCase())) {
-        alert("Customer already exists.");
-        return;
-      }
-      state.customers.push({ id: 'c-' + Date.now(), name });
-      save();
-      render();
-    }
-
-    function deleteCustomer(id) {
-      showConfirmation('Delete Customer?', 'This will remove the customer from the directory.', 'Delete', 'danger', () => {
-        state.customers = state.customers.filter(c => c.id !== id);
-        save();
-        render();
-      });
-    }
-
-    function addProduct(e) {
-      e.preventDefault();
-      const form = e.target;
-      const customerName = form.customer.value.trim();
-      
-      // Auto-add customer if they don't exist
-      if (customerName && !state.customers.some(c => c.name.toLowerCase() === customerName.toLowerCase())) {
-        state.customers.push({ id: 'c-' + Date.now(), name: customerName });
-      }
-
-      const newP = {
-        id: 'p-' + Date.now(),
-        name: form.name.value,
-        code: form.code.value,
-        type: form.type.value,
-        customer: customerName || 'General',
-        availableQuantity: parseInt(form.qty.value) || 0,
-        lastProcess: 'Entry'
-      };
-
-      state.products.push(newP);
-      state.inventorySubTab = 'stock';
-      save();
-      render();
-    }
-
-    function updateStock(id, qty) {
-      const p = state.products.find(x => x.id === id);
-      if (p) p.availableQuantity += qty;
-      save();
-      render();
-    }
-
-    function deleteProduct(id) {
-      showConfirmation('Delete Product?', 'Permanent stock removal.', 'Delete', 'danger', () => {
-        state.products = state.products.filter(p => p.id !== id);
-        save();
-        render();
-      });
-    }
-
     function toggleAdmin() {
       if (state.isAdmin) {
-        showConfirmation('Logout Admin?', 'Restrict to Worker Mode.', 'Logout', 'warning', () => {
-          state.isAdmin = false;
-          render();
-        });
+        state.isAdmin = false;
+        render();
       } else {
         showAdminLogin();
       }
     }
 
-    // --- UI Render Components ---
+    // --- Dispatch Logic ---
+    function addToCart(productId) {
+      const boxes = parseInt(document.getElementById(`boxes-${productId}`).value) || 0;
+      const pcs = parseInt(document.getElementById(`pcs-${productId}`).value) || 0;
+      const total = parseInt(document.getElementById(`total-${productId}`).value) || 0;
+
+      if (total <= 0) return;
+      
+      const product = state.products.find(p => p.id === productId);
+      if (product.availableQuantity < total) {
+        alert("Not enough stock available!");
+        return;
+      }
+
+      product.availableQuantity -= total;
+      state.loadingCart.push({
+        productId,
+        productName: product.name,
+        productCode: product.code,
+        quantity: total,
+        boxes: boxes || 1,
+        pcsPerBox: pcs || total
+      });
+
+      save();
+      render();
+    }
+
+    function removeFromCart(index) {
+      const item = state.loadingCart[index];
+      const product = state.products.find(p => p.id === item.productId);
+      product.availableQuantity += item.quantity;
+      state.loadingCart.splice(index, 1);
+      save();
+      render();
+    }
+
+    function updateCardTotal(productId) {
+      const boxes = parseInt(document.getElementById(`boxes-${productId}`).value) || 0;
+      const pcs = parseInt(document.getElementById(`pcs-${productId}`).value) || 0;
+      document.getElementById(`total-${productId}`).value = boxes * pcs;
+    }
+
+    function finalizeDispatch() {
+      if (state.loadingCart.length === 0 || !state.selectedCustomer) return;
+      
+      const session = {
+        id: Date.now().toString(),
+        customerName: state.selectedCustomer,
+        items: [...state.loadingCart],
+        timestamp: new Date().toLocaleString(),
+        receiptNumber: (state.sessions.length + 1).toString().padStart(4, '0')
+      };
+      
+      state.sessions.unshift(session);
+      state.loadingCart = [];
+      state.selectedCustomer = '';
+      save();
+      render();
+      showReceipt(session);
+    }
+
+    // --- Inventory Actions ---
+    function updateStock(id, qty) {
+      const p = state.products.find(x => x.id === id);
+      p.availableQuantity += qty;
+      save();
+      render();
+    }
+
+    function addProduct(e) {
+      e.preventDefault();
+      const form = e.target;
+      state.products.push({
+        id: 'p-' + Date.now(),
+        name: form.name.value,
+        code: form.code.value,
+        type: form.type.value,
+        customer: form.customer.value,
+        availableQuantity: parseInt(form.qty.value) || 0
+      });
+      state.inventorySubTab = 'stock';
+      save();
+      render();
+    }
+
+    function addCustomer(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-customer-name').value;
+      state.customers.push({ id: 'c-' + Date.now(), name });
+      save();
+      render();
+    }
+
+    // --- Render Engine ---
     function render() {
       const container = document.getElementById('view-container');
       const title = document.getElementById('page-title');
@@ -368,18 +322,18 @@
       const adminBtn = document.getElementById('admin-btn');
       const exportBtn = document.getElementById('export-btn');
 
-      // Update Nav Highlights
-      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('bg-blue-600', 'text-white', 'shadow-xl', 'translate-x-1'));
+      // Update active navigation
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('bg-blue-600', 'text-white', 'shadow-xl'));
       document.querySelectorAll('.nav-item').forEach(el => el.classList.add('text-slate-500'));
-      document.getElementById('nav-' + state.activeTab).classList.add('bg-blue-600', 'text-white', 'shadow-xl', 'translate-x-1');
+      document.getElementById('nav-' + state.activeTab).classList.add('bg-blue-600', 'text-white', 'shadow-xl');
       document.getElementById('nav-' + state.activeTab).classList.remove('text-slate-500');
 
+      // Admin UI states
       adminStripe.style.display = state.isAdmin ? 'block' : 'none';
       exportBtn.style.display = (state.isAdmin && state.activeTab === 'inventory') ? 'block' : 'none';
       searchContainer.style.display = state.activeTab === 'dispatch' ? 'block' : 'none';
       
       const adminStatus = document.getElementById('admin-status-label');
-      const adminSub = document.getElementById('admin-sub-label');
       const adminIconBg = document.getElementById('admin-icon-bg');
       const adminLockIcon = document.getElementById('admin-lock-icon');
       
@@ -387,56 +341,65 @@
         adminBtn.className = "w-full flex items-center gap-3 p-2.5 rounded-xl border-2 bg-amber-500/10 border-amber-500/50 text-amber-500";
         adminIconBg.className = "w-8 h-8 rounded-lg flex items-center justify-center bg-amber-500 text-white";
         adminLockIcon.className = "fas fa-unlock";
-        adminStatus.innerText = "Admin Portal";
-        adminSub.innerText = "Full Access";
+        adminStatus.innerText = "Admin Mode";
       } else {
         adminBtn.className = "w-full flex items-center gap-3 p-2.5 rounded-xl border-2 bg-slate-800/50 border-slate-700 text-slate-400";
         adminIconBg.className = "w-8 h-8 rounded-lg flex items-center justify-center bg-slate-700 text-slate-500";
         adminLockIcon.className = "fas fa-lock";
         adminStatus.innerText = "Login";
-        adminSub.innerText = "Worker Mode";
       }
 
+      // Populate customer selector
       const customerSelect = document.getElementById('customer-selector');
-      customerSelect.innerHTML = '<option value="">All Customers</option>' + 
+      customerSelect.innerHTML = '<option value="">Select Customer</option>' + 
         state.customers.map(c => `<option value="${c.name}" ${state.selectedCustomer === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
 
-      // Routing
+      // View Routing
       if (state.activeTab === 'dashboard') {
-        title.innerHTML = 'Factory Dashboard';
-        container.innerHTML = renderDashboard();
+        title.innerText = 'Unicolor Dashboard';
+        renderDashboard(container);
       } else if (state.activeTab === 'dispatch') {
-        title.innerHTML = 'Dispatch Center';
-        container.innerHTML = renderDispatch();
+        title.innerText = 'Warehouse Dispatch';
+        renderDispatch(container);
       } else {
-        title.innerHTML = 'Inventory Control';
-        container.innerHTML = renderInventory();
+        title.innerText = 'Inventory Management';
+        renderInventory(container);
       }
     }
 
-    function renderDashboard() {
+    function renderDashboard(container) {
       const totalStock = state.products.reduce((acc, p) => acc + p.availableQuantity, 0);
-      const totalLoadedToday = state.sessions.reduce((acc, s) => acc + s.items.reduce((iSum, i) => iSum + i.quantity, 0), 0);
+      const totalDispatched = state.sessions.reduce((acc, s) => acc + s.items.reduce((iAcc, i) => iAcc + i.quantity, 0), 0);
       
-      return `
-        <div class="space-y-8">
+      container.innerHTML = `
+        <div class="space-y-8 animate-in fade-in duration-500">
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
               <div class="bg-blue-600 w-12 h-12 rounded-xl flex items-center justify-center text-white"><i class="fas fa-boxes"></i></div>
               <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Stock</p><p class="text-2xl font-black text-slate-800">${totalStock.toLocaleString()}</p></div>
             </div>
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-              <div class="bg-emerald-500 w-12 h-12 rounded-xl flex items-center justify-center text-white"><i class="fas fa-truck"></i></div>
-              <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dispatched Today</p><p class="text-2xl font-black text-slate-800">${totalLoadedToday.toLocaleString()}</p></div>
+              <div class="bg-emerald-500 w-12 h-12 rounded-xl flex items-center justify-center text-white"><i class="fas fa-truck-loading"></i></div>
+              <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Dispatched</p><p class="text-2xl font-black text-slate-800">${totalDispatched.toLocaleString()}</p></div>
             </div>
           </div>
-          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-            <h2 class="text-xl font-bold mb-6">Recent Dispatch Logs</h2>
+
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 overflow-hidden">
+            <h2 class="text-xl font-bold mb-6">Recent Dispatch History</h2>
             <div class="overflow-x-auto">
               <table class="w-full text-sm">
-                <thead class="text-left text-slate-400 uppercase text-[10px] font-black"><tr><th class="pb-4">Seq</th><th class="pb-4">Customer</th><th class="pb-4">Qty</th><th class="pb-4 text-right">Time</th></tr></thead>
+                <thead class="text-left text-slate-400 uppercase text-[10px] font-black">
+                  <tr><th class="pb-4">Seq</th><th class="pb-4">Customer</th><th class="pb-4">Volume</th><th class="pb-4 text-right">Date</th></tr>
+                </thead>
                 <tbody class="divide-y divide-slate-50">
-                  ${state.sessions.map(s => `<tr><td class="py-4 font-black text-blue-600">#${s.receiptNumber}</td><td class="py-4 font-bold text-slate-800">${s.customerName}</td><td class="py-4 font-black">${s.items.reduce((acc, i) => acc + i.quantity, 0).toLocaleString()}</td><td class="py-4 text-right text-slate-400">${s.timestamp}</td></tr>`).join('')}
+                  ${state.sessions.map(s => `
+                    <tr>
+                      <td class="py-4 font-black text-blue-600">#${s.receiptNumber}</td>
+                      <td class="py-4 font-bold text-slate-800">${s.customerName}</td>
+                      <td class="py-4 font-black">${s.items.reduce((a,i) => a+i.quantity, 0).toLocaleString()}</td>
+                      <td class="py-4 text-right text-slate-400">${s.timestamp}</td>
+                    </tr>
+                  `).join('')}
                 </tbody>
               </table>
             </div>
@@ -444,121 +407,128 @@
         </div>`;
     }
 
-    function renderDispatch() {
+    function renderDispatch(container) {
       let filtered = state.products;
       if (state.selectedCustomer) filtered = filtered.filter(p => p.customer === state.selectedCustomer);
-      if (state.searchQuery) {
-        const q = state.searchQuery.toLowerCase();
-        filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
-      }
-      return `
-        <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
-          <div class="xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      if (state.searchQuery) filtered = filtered.filter(p => p.name.toLowerCase().includes(state.searchQuery) || p.code.toLowerCase().includes(state.searchQuery));
+
+      container.innerHTML = `
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-8 h-full">
+          <div class="xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 pb-20">
             ${filtered.map(p => `
-              <div class="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm hover:border-blue-300 flex flex-col">
-                <div class="flex justify-between items-start mb-4"><span class="px-2.5 py-1 text-[9px] font-black uppercase rounded-lg border bg-slate-100 text-slate-600">${p.type}</span></div>
-                <h3 class="text-lg font-bold text-slate-800 leading-tight">${p.name}</h3>
-                <p class="text-[10px] text-slate-400 font-mono tracking-widest mb-4">${p.code}</p>
-                <div class="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
-                  <div><p class="text-[10px] text-slate-400 uppercase font-black">Available</p><p class="text-xl font-black text-slate-800">${p.availableQuantity.toLocaleString()}</p></div>
-                  <div class="flex gap-1">
-                    <button onclick="addToCart('${p.id}', 100)" class="px-3 py-2 bg-slate-900 text-white rounded-lg text-[10px] font-black">+100</button>
-                    <button onclick="addToCart('${p.id}', 500)" class="px-3 py-2 bg-slate-900 text-white rounded-lg text-[10px] font-black">+500</button>
-                  </div>
+              <div class="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm hover:border-blue-300 transition-all flex flex-col">
+                <div class="flex justify-between items-start mb-4">
+                  <span class="px-2.5 py-1 text-[9px] font-black uppercase rounded-lg border bg-slate-50 text-slate-500">${p.type}</span>
                 </div>
-              </div>`).join('')}
+                <h3 class="text-lg font-bold text-slate-800 leading-tight">${p.name}</h3>
+                <p class="text-[10px] text-slate-400 font-mono tracking-widest mb-4 uppercase">${p.code} • ${p.customer}</p>
+                
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 mt-auto">
+                   <div class="grid grid-cols-2 gap-2 mb-3">
+                      <div class="space-y-1">
+                        <label class="text-[9px] font-black uppercase text-slate-400">Boxes</label>
+                        <input id="boxes-${p.id}" type="number" oninput="updateCardTotal('${p.id}')" placeholder="0" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold">
+                      </div>
+                      <div class="space-y-1">
+                        <label class="text-[9px] font-black uppercase text-slate-400">Pcs/Box</label>
+                        <input id="pcs-${p.id}" type="number" oninput="updateCardTotal('${p.id}')" placeholder="0" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold">
+                      </div>
+                   </div>
+                   <div class="flex gap-2">
+                     <input id="total-${p.id}" type="number" placeholder="Total Qty" class="flex-1 px-4 py-3 rounded-xl font-black text-blue-600 bg-white border border-blue-100 outline-none">
+                     <button onclick="addToCart('${p.id}')" class="px-6 bg-slate-900 text-white font-black rounded-xl text-xs">LOAD</button>
+                   </div>
+                </div>
+              </div>
+            `).join('')}
           </div>
+          
           <div class="xl:col-span-1">
-            <div class="sticky top-0 bg-white rounded-3xl shadow-xl border border-slate-200 flex flex-col h-[calc(100vh-140px)]">
-              <div class="p-6 bg-slate-900 text-white"><h2 class="text-xl font-black uppercase tracking-tight">Loading Staging</h2><p class="text-xs text-slate-400">${state.selectedCustomer || 'Select customer'}</p></div>
-              <div class="flex-1 overflow-y-auto p-4 space-y-3">${state.loadingCart.map(i => `
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 relative group">
-                  <button onclick="removeFromCart('${i.productId}')" class="absolute top-2 right-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100"><i class="fas fa-times-circle"></i></button>
-                  <p class="text-xs font-bold text-slate-800">${i.productName}</p>
-                  <p class="text-[10px] font-mono text-slate-400">${i.productCode}</p>
-                  <p class="mt-2 text-sm font-black text-blue-600">QTY: ${i.quantity.toLocaleString()}</p>
-                </div>`).join('')}</div>
-              <div class="p-6 bg-slate-50 border-t border-slate-100">
-                <button onclick="finalizeDispatch()" ${(!state.selectedCustomer || !state.loadingCart.length) ? 'disabled' : ''} class="w-full py-4 bg-blue-600 text-white font-black rounded-2xl disabled:opacity-30">Confirm Dispatch</button>
+            <div class="sticky top-0 bg-white rounded-3xl shadow-xl border border-slate-200 flex flex-col h-[calc(100vh-160px)]">
+              <div class="p-6 bg-slate-900 text-white rounded-t-3xl">
+                <h2 class="text-xl font-black uppercase tracking-tight">Cargo Staging</h2>
+                <p class="text-xs text-slate-400 mt-1">${state.selectedCustomer || 'Please select a customer'}</p>
+              </div>
+              <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                ${state.loadingCart.map((item, idx) => `
+                  <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 relative group">
+                    <button onclick="removeFromCart(${idx})" class="absolute top-2 right-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100"><i class="fas fa-times-circle"></i></button>
+                    <p class="text-xs font-bold text-slate-800">${item.productName}</p>
+                    <p class="text-[10px] font-mono text-slate-400">${item.productCode}</p>
+                    <div class="mt-3 flex justify-between items-end">
+                      <p class="text-[10px] text-slate-400 font-bold">${item.boxes} Boxes x ${item.pcsPerBox}</p>
+                      <p class="text-lg font-black text-blue-600 leading-none">${item.quantity.toLocaleString()}</p>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+              <div class="p-6 bg-slate-50 border-t border-slate-200">
+                <button onclick="finalizeDispatch()" ${(!state.selectedCustomer || state.loadingCart.length === 0) ? 'disabled' : ''} class="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-lg disabled:opacity-30 active:scale-95 transition-all">GENERATE DISPATCH SHEET</button>
               </div>
             </div>
           </div>
         </div>`;
     }
 
-    function renderInventory() {
-      let filtered = state.products;
-      if (state.searchQuery) {
-        const q = state.searchQuery.toLowerCase();
-        filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
-      }
-
-      return `
+    function renderInventory(container) {
+      container.innerHTML = `
         <div class="space-y-6">
           <div class="flex gap-2 p-1 bg-slate-200/50 rounded-xl w-fit">
-            <button onclick="switchInventorySubTab('stock')" class="px-6 py-2 rounded-lg font-bold text-sm ${state.inventorySubTab === 'stock' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}">Replenish Stock</button>
-            <button onclick="switchInventorySubTab('add')" class="px-6 py-2 rounded-lg font-bold text-sm ${state.inventorySubTab === 'add' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}">Add New Product</button>
-            <button onclick="switchInventorySubTab('customers')" class="px-6 py-2 rounded-lg font-bold text-sm ${state.inventorySubTab === 'customers' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}">Customer Directory</button>
+            <button onclick="state.inventorySubTab='stock'; render();" class="px-6 py-2 rounded-lg font-bold text-sm ${state.inventorySubTab === 'stock' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}">Warehouse Levels</button>
+            <button onclick="state.inventorySubTab='add'; render();" class="px-6 py-2 rounded-lg font-bold text-sm ${state.inventorySubTab === 'add' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}">Add Product</button>
+            <button onclick="state.inventorySubTab='customers'; render();" class="px-6 py-2 rounded-lg font-bold text-sm ${state.inventorySubTab === 'customers' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}">Manage Clients</button>
           </div>
 
           ${state.inventorySubTab === 'add' ? `
             <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm animate-in fade-in duration-300">
               <h2 class="text-xl font-bold mb-6">Register Finished Goods</h2>
               <form onsubmit="addProduct(event)" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <input required name="name" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="Product Description">
+                <input required name="name" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="Description">
                 <input required name="code" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="Product Code">
                 <select name="type" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
                   <option>Carton</option><option>Blister Aluminum</option><option>Label</option><option>Leaflet</option>
                 </select>
-                <!-- Datalist allows typing a new customer or selecting an existing one -->
-                <input list="customer-list" name="customer" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="Type or select customer...">
-                <datalist id="customer-list">
-                  ${state.customers.map(c => `<option value="${c.name}">`).join('')}
-                </datalist>
-                <input type="number" name="qty" required class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="Initial Qty">
-                <button type="submit" class="lg:col-start-4 bg-slate-900 text-white font-black rounded-xl">Add to Warehouse</button>
+                <select name="customer" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                  ${state.customers.map(c => `<option value="${c.name}">${c.name}</option>`).join('')}
+                </select>
+                <input type="number" name="qty" required class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="Initial Stock">
+                <button type="submit" class="lg:col-span-4 bg-slate-900 text-white font-black rounded-xl py-4">Save to Warehouse</button>
               </form>
             </div>
           ` : ''}
 
           ${state.inventorySubTab === 'customers' ? `
             <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm animate-in fade-in duration-300">
-              <h2 class="text-xl font-bold mb-6">Manage Client Directory</h2>
+              <h2 class="text-xl font-bold mb-6">Consignee Directory</h2>
               <form onsubmit="addCustomer(event)" class="flex gap-3 mb-8">
-                <input id="new-customer-input" required class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="New Customer Name">
+                <input id="new-customer-name" required class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3" placeholder="New Client Name">
                 <button type="submit" class="px-8 bg-blue-600 text-white font-black rounded-xl">Add Client</button>
               </form>
-              <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                ${state.customers.map(c => `
-                  <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-center group">
-                    <span class="font-bold text-slate-700">${c.name}</span>
-                    <button onclick="deleteCustomer('${c.id}')" class="text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><i class="fas fa-trash"></i></button>
-                  </div>
-                `).join('')}
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                ${state.customers.map(c => `<div class="p-4 bg-slate-50 rounded-xl border font-bold text-slate-700">${c.name}</div>`).join('')}
               </div>
             </div>
           ` : ''}
 
           ${state.inventorySubTab === 'stock' ? `
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden animate-in fade-in duration-300">
-              <div class="p-6 border-b border-slate-50 flex justify-between items-center">
-                <h2 class="text-xl font-bold">In-Stock Inventory</h2>
-                <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Real-time Count</div>
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+              <div class="p-6 bg-slate-50 flex justify-between items-center">
+                <h2 class="text-xl font-bold">Current Warehouse Inventory</h2>
+                <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Real-time Stock Count</div>
               </div>
               <div class="overflow-x-auto">
                 <table class="w-full text-sm">
-                  <thead class="bg-slate-50 text-[10px] font-black uppercase text-slate-400 text-left">
-                    <tr><th class="px-6 py-4">Item Details</th><th class="px-6 py-4">Client</th><th class="px-6 py-4 text-right">Qty</th><th class="px-6 py-4 text-center">Update</th></tr>
+                  <thead class="bg-slate-100/50 text-[10px] font-black uppercase text-slate-400 text-left">
+                    <tr><th class="px-6 py-4">Product Details</th><th class="px-6 py-4">Client</th><th class="px-6 py-4 text-right">Available Qty</th><th class="px-6 py-4 text-center">Update</th></tr>
                   </thead>
                   <tbody class="divide-y divide-slate-50">
-                    ${filtered.map(p => `
-                      <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4"><p class="font-bold text-slate-800">${p.name}</p><p class="text-[10px] text-slate-400 font-mono">${p.code} • ${p.type}</p></td>
+                    ${state.products.map(p => `
+                      <tr class="hover:bg-blue-50/20 transition-colors">
+                        <td class="px-6 py-4"><p class="font-bold text-slate-800">${p.name}</p><p class="text-[10px] text-slate-400 font-mono">${p.code}</p></td>
                         <td class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">${p.customer}</td>
                         <td class="px-6 py-4 text-right font-black text-lg">${p.availableQuantity.toLocaleString()}</td>
                         <td class="px-6 py-4 flex items-center justify-center gap-2">
-                          <button onclick="updateStock('${p.id}', 500)" class="w-9 h-9 border border-slate-200 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-white">+500</button>
-                          ${state.isAdmin ? `<button onclick="deleteProduct('${p.id}')" class="w-9 h-9 text-red-200 hover:text-red-500"><i class="fas fa-trash-alt"></i></button>` : ''}
+                          <button onclick="updateStock('${p.id}', 1000)" class="px-4 py-2 border rounded-lg text-slate-400 font-bold hover:bg-white hover:text-blue-600 transition-all">+1000</button>
                         </td>
                       </tr>`).join('')}
                   </tbody>
@@ -569,96 +539,148 @@
         </div>`;
     }
 
-    // --- Modal Management ---
+    // --- Modals ---
     function showAdminLogin() {
-      const modal = document.getElementById('modal-container');
-      modal.innerHTML = `
-        <div id="login-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-backdrop animate-in fade-in duration-200">
+      const container = document.getElementById('modal-container');
+      container.innerHTML = `
+        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-backdrop animate-in fade-in duration-200">
           <div id="login-card" class="bg-white w-full max-w-xs rounded-3xl shadow-2xl p-8 text-center animate-in zoom-in-95 duration-200">
             <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner"><i class="fas fa-shield-halved text-2xl"></i></div>
             <h2 class="text-xl font-black text-slate-800 uppercase tracking-tight">Admin PIN</h2>
             <input id="pin-input" type="password" maxlength="4" class="w-full text-center text-3xl font-black p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-500 mt-8" placeholder="••••">
-            <div id="pin-error" class="hidden text-red-500 text-[10px] font-black uppercase mt-2">Incorrect PIN</div>
             <div class="grid grid-cols-2 gap-3 mt-8">
-              <button onclick="closeModal()" class="py-3 px-4 font-black text-slate-400 uppercase text-xs tracking-widest">Cancel</button>
-              <button onclick="handlePinSubmit()" class="py-4 px-6 bg-slate-900 text-white font-black rounded-2xl text-xs uppercase tracking-widest">Unlock</button>
+              <button onclick="closeModal()" class="py-3 px-4 font-black text-slate-400 uppercase text-xs">Cancel</button>
+              <button onclick="handlePinSubmit()" class="py-4 px-6 bg-slate-900 text-white font-black rounded-2xl text-xs uppercase">Unlock</button>
             </div>
           </div>
         </div>`;
-      document.getElementById('pin-input').focus();
     }
 
     function handlePinSubmit() {
       const pin = document.getElementById('pin-input').value;
-      if (pin === '1234') { state.isAdmin = true; closeModal(); render(); }
-      else { 
+      if (pin === '1234') { 
+        state.isAdmin = true; 
+        closeModal(); 
+        render(); 
+      } else {
         document.getElementById('login-card').classList.add('shaking');
-        document.getElementById('pin-error').classList.remove('hidden');
-        setTimeout(() => { document.getElementById('login-card').classList.remove('shaking'); document.getElementById('pin-error').classList.add('hidden'); }, 500);
+        setTimeout(() => document.getElementById('login-card').classList.remove('shaking'), 400);
       }
     }
 
-    function showConfirmation(title, message, btnText, variant, onConfirm) {
-      const modal = document.getElementById('modal-container');
-      const colors = variant === 'danger' ? 'bg-red-600' : 'bg-amber-500';
-      modal.innerHTML = `
-        <div class="fixed inset-0 z-[110] flex items-center justify-center p-4 modal-backdrop animate-in fade-in duration-200">
-          <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-8 text-center animate-in zoom-in-95 duration-200">
-            <h2 class="text-xl font-black text-slate-800">${title}</h2>
-            <p class="text-sm text-slate-500 mt-3">${message}</p>
-            <div class="grid grid-cols-2 gap-3 mt-8">
-              <button onclick="closeModal()" class="py-3 px-4 font-black text-slate-400 uppercase text-xs">Cancel</button>
-              <button id="confirm-action-btn" class="py-4 px-6 ${colors} text-white font-black rounded-2xl text-xs uppercase">${btnText}</button>
-            </div>
-          </div>
-        </div>`;
-      document.getElementById('confirm-action-btn').onclick = () => { onConfirm(); closeModal(); };
-    }
-
     function showReceipt(session) {
-      const modal = document.getElementById('modal-container');
-      const total = session.items.reduce((acc, i) => acc + i.quantity, 0);
-      modal.innerHTML = `
+      const container = document.getElementById('modal-container');
+      const totalVolume = session.items.reduce((a,i) => a+i.quantity, 0);
+      const totalBoxes = session.items.reduce((a,i) => a+i.boxes, 0);
+
+      container.innerHTML = `
         <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-backdrop no-print">
-          <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+          <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
             <div class="p-6 border-b border-slate-50 flex justify-between items-center">
-              <h2 class="font-black uppercase text-slate-800">Dispatch Voucher</h2>
+              <h2 class="font-black uppercase text-slate-800">Dispatch Document</h2>
               <button onclick="closeModal()" class="text-slate-300 hover:text-slate-600"><i class="fas fa-times"></i></button>
             </div>
             <div class="flex-1 overflow-y-auto p-10">
-              <div class="text-center mb-10"><h1 class="text-3xl font-black uppercase tracking-tighter">PrintTrack Pro</h1></div>
-              <div class="bg-slate-50 p-6 rounded-2xl border mb-8 grid grid-cols-2 gap-4">
-                <div><p class="text-[10px] text-slate-400 uppercase font-black">Client</p><p class="font-black text-slate-800">${session.customerName}</p></div>
-                <div class="text-right"><p class="text-[10px] text-slate-400 uppercase font-black">Ref #</p><p class="text-xl font-black text-blue-600">#${session.receiptNumber}</p></div>
+              <div class="text-center mb-10 flex flex-col items-center">
+                 <div class="w-16 h-16 mb-4">
+                    <svg viewBox="0 0 140 140" class="w-full h-full">
+                      <path d="M25,35 V65 C25,85 50,85 50,65 V35" fill="none" stroke="#F9BD15" stroke-width="15" stroke-linecap="round"/>
+                      <path d="M50,65 V55 C50,35 75,35 75,55 V85" fill="none" stroke="#4FB5B3" stroke-width="15" stroke-linecap="round"/>
+                      <path d="M100,55 V85" stroke="#E85141" stroke-width="15" stroke-linecap="round"/>
+                      <circle cx="100" cy="30" r="8" fill="#E85141"/>
+                    </svg>
+                 </div>
+                 <h1 class="text-3xl font-black uppercase text-slate-900">Unicolor</h1>
+                 <p class="text-[10px] text-slate-400 font-black tracking-widest uppercase">Factory Dispatch</p>
+              </div>
+              <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 mb-8 grid grid-cols-2 gap-4">
+                <div><p class="text-[10px] text-slate-400 uppercase font-black tracking-widest">Client</p><p class="font-black text-slate-800">${session.customerName}</p></div>
+                <div class="text-right"><p class="text-[10px] text-slate-400 uppercase font-black tracking-widest">Ref #</p><p class="text-xl font-black text-blue-600">#${session.receiptNumber}</p></div>
               </div>
               <table class="w-full text-xs">
-                <thead class="border-b-2 border-slate-900 text-left"><tr><th class="py-2 uppercase font-black">Description</th><th class="py-2 text-right uppercase font-black">Qty</th></tr></thead>
-                <tbody class="divide-y divide-slate-100">${session.items.map(i => `<tr><td class="py-4 font-bold">${i.productName}</td><td class="py-4 text-right font-black">${i.quantity.toLocaleString()}</td></tr>`).join('')}</tbody>
+                <thead class="border-b-2 border-slate-900 text-left"><tr><th class="py-2 uppercase font-black tracking-widest">Item</th><th class="py-2 text-center uppercase font-black tracking-widest">Boxes</th><th class="py-2 text-right uppercase font-black tracking-widest">Total Qty</th></tr></thead>
+                <tbody class="divide-y divide-slate-100">${session.items.map(i => `<tr><td class="py-4 font-bold text-slate-800">${i.productName}</td><td class="py-4 text-center text-slate-500">${i.boxes}</td><td class="py-4 text-right font-black text-sm">${i.quantity.toLocaleString()}</td></tr>`).join('')}</tbody>
               </table>
+              <div class="mt-8 pt-6 border-t border-slate-200 flex justify-between items-center">
+                <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Gross Volume</span>
+                <span class="text-2xl font-black text-slate-900">${totalVolume.toLocaleString()} Units</span>
+              </div>
             </div>
             <div class="p-8 bg-slate-50 border-t flex gap-4">
               <button onclick="closeModal()" class="flex-1 font-black text-slate-400 uppercase text-xs">Close</button>
-              <button onclick="window.print()" class="flex-[2] py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl text-xs uppercase"><i class="fas fa-print mr-2"></i>Print Dispatch Sheet</button>
+              <button onclick="window.print()" class="flex-[2] py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl text-xs uppercase flex items-center justify-center gap-2"><i class="fas fa-print"></i>Print Voucher</button>
             </div>
           </div>
         </div>`;
       
       document.getElementById('print-receipt').innerHTML = `
-        <div class="max-w-3xl mx-auto">
-          <div class="text-center mb-10 pb-6 border-b-4 border-black"><h1 class="text-5xl font-black uppercase tracking-tighter">PrintTrack Pro</h1></div>
-          <div class="flex justify-between items-start mb-12"><div><h2 class="text-xs uppercase text-gray-400 font-black">Client:</h2><p class="text-3xl font-black">${session.customerName}</p></div><div class="text-right"><h2 class="text-xs uppercase text-gray-400 font-black">Voucher #:</h2><p class="text-2xl font-black">#${session.receiptNumber}</p><p class="text-sm font-medium">${session.timestamp}</p></div></div>
-          <table class="w-full mb-16"><thead class="border-b-2 border-black text-left"><tr><th class="py-3 uppercase font-black">Product Code</th><th class="py-3 uppercase font-black">Description</th><th class="py-3 text-right uppercase font-black">Quantity</th></tr></thead><tbody class="divide-y divide-gray-300">${session.items.map(item => `<tr><td class="py-4 font-mono">${item.productCode}</td><td class="py-4 font-bold text-xl">${item.productName}</td><td class="py-4 text-right font-black text-2xl">${item.quantity.toLocaleString()}</td></tr>`).join('')}</tbody><tfoot><tr class="border-t-4 border-black"><td colSpan="2" class="py-6 font-black uppercase text-lg">Total Dispatched</td><td class="py-6 text-right font-black text-3xl">${total.toLocaleString()}</td></tr></tfoot></table>
-          <div class="mt-20 grid grid-cols-2 gap-32"><div class="text-center border-t-2 border-black pt-2"><p class="font-black uppercase">Warehouse Dispatcher</p></div><div class="text-center border-t-2 border-black pt-2"><p class="font-black uppercase">Client Acknowledgement</p></div></div>
+        <div class="p-10">
+          <div class="text-center mb-10 pb-6 border-b-4 border-black flex flex-col items-center">
+            <div class="w-24 h-24 mb-4">
+               <svg viewBox="0 0 140 140" class="w-full h-full">
+                  <path d="M25,35 V65 C25,85 50,85 50,65 V35" fill="none" stroke="#000" stroke-width="15" stroke-linecap="round"/>
+                  <path d="M50,65 V55 C50,35 75,35 75,55 V85" fill="none" stroke="#000" stroke-width="15" stroke-linecap="round"/>
+                  <path d="M100,55 V85" stroke="#000" stroke-width="15" stroke-linecap="round"/>
+                  <circle cx="100" cy="30" r="8" fill="#000"/>
+                </svg>
+            </div>
+            <h1 class="text-5xl font-black uppercase tracking-tighter mb-2">UNICOLOR</h1>
+            <p class="text-base font-bold uppercase tracking-[0.3em] text-gray-700">PRINTING & PACKAGING DISPATCH VOUCHER</p>
+          </div>
+          
+          <div class="flex justify-between items-start mb-12">
+            <div><h2 class="text-xs font-black uppercase text-gray-400">Consignee:</h2><p class="text-3xl font-black">${session.customerName}</p></div>
+            <div class="text-right"><h2 class="text-xs font-black uppercase text-gray-400">Voucher #:</h2><p class="text-2xl font-black">#${session.receiptNumber}</p><p class="text-sm font-medium text-gray-500">${session.timestamp}</p></div>
+          </div>
+
+          <table class="w-full mb-16">
+            <thead class="border-b-4 border-black text-left">
+              <tr>
+                <th class="py-4 uppercase font-black text-sm tracking-widest">Description</th>
+                <th class="py-4 text-center uppercase font-black text-sm tracking-widest">Boxes</th>
+                <th class="py-4 text-center uppercase font-black text-sm tracking-widest">Pcs / Box</th>
+                <th class="py-4 text-right uppercase font-black text-sm tracking-widest">Quantity</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y-2 divide-gray-200">
+              ${session.items.map(i => `
+                <tr>
+                  <td class="py-5 font-bold text-xl uppercase">${i.productCode} - ${i.productName}</td>
+                  <td class="py-5 text-center font-bold text-xl">${i.boxes}</td>
+                  <td class="py-5 text-center font-bold text-xl">${i.pcsPerBox.toLocaleString()}</td>
+                  <td class="py-5 text-right font-black text-2xl">${i.quantity.toLocaleString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+            <tfoot>
+              <tr class="border-t-4 border-black font-black">
+                <td colSpan="3" class="py-8 text-xl tracking-widest uppercase text-left">Total Dispatch Units</td>
+                <td class="py-8 text-right text-4xl">${totalVolume.toLocaleString()}</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <div class="mt-32 grid grid-cols-2 gap-40">
+            <div class="text-center border-t-4 border-black pt-4 font-black uppercase text-sm tracking-widest">Factory Dispatcher</div>
+            <div class="text-center border-t-4 border-black pt-4 font-black uppercase text-sm tracking-widest">Client Receiver</div>
+          </div>
         </div>`;
     }
 
     function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
 
     function exportData() {
-      const csv = "data:text/csv;charset=utf-8," + [['ID', 'Name', 'Code', 'Category', 'Client', 'Stock'], ...state.products.map(p => [p.id, p.name, p.code, p.type, p.customer, p.availableQuantity])].map(e => e.join(",")).join("\n");
-      const link = document.createElement("a"); link.setAttribute("href", encodeURI(csv)); link.setAttribute("download", `inventory_${new Date().toISOString().split('T')[0]}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      const csv = "data:text/csv;charset=utf-8," + [['ID', 'Name', 'Code', 'Client', 'Stock'], ...state.products.map(p => [p.id, p.name, p.code, p.customer, p.availableQuantity])].map(e => e.join(",")).join("\n");
+      const encodedUri = encodeURI(csv);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `unicolor_inventory_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
+    // Initialize App
     init();
   </script>
   <script>
