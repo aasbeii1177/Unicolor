@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f172a">
+  <title>PrintTrack Pro | Industrial Dispatch</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+    
+    body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+    
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      body { background: white !important; color: black !important; padding: 0 !important; overflow: visible !important; }
+      .h-screen { height: auto !important; overflow: visible !important; }
+      @page { margin: 1.5cm; }
+    }
+    
+    .print-only { display: none; }
+    
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; margin: 0; 
+    }
+
+    .modal-backdrop {
+      background-color: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(8px);
+    }
+
+    .shaking {
+      animation: shake 0.2s ease-in-out 0s 2;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+  </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.4",
+    "react/": "https://esm.sh/react@^19.2.4/"
+  }
+}
+</script>
+</head>
+<body class="bg-slate-50 text-slate-900 overflow-hidden h-screen flex">
+
+  <!-- Necessary for environment compatibility -->
+  <div id="root" class="hidden"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="w-20 lg:w-64 bg-slate-900 text-white flex flex-col no-print transition-all duration-300 shrink-0">
+    <div class="p-6 flex flex-col items-center lg:items-start gap-4 border-b border-slate-800 mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-900/20">
+          <i class="fas fa-print text-xl"></i>
+        </div>
+        <span class="hidden lg:block text-xl font-black tracking-tighter uppercase">PrintTrack</span>
+      </div>
+      
+      <button onclick="toggleAdmin()" id="admin-btn" class="w-full flex items-center gap-3 p-2.5 rounded-xl transition-all border-2 bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-500">
+        <div id="admin-icon-bg" class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-slate-700 text-slate-500">
+          <i id="admin-lock-icon" class="fas fa-lock"></i>
+        </div>
+        <div class="hidden lg:block text-left overflow-hidden">
+          <p id="admin-status-label" class="text-[10px] font-black uppercase tracking-widest">Login</p>
+          <p id="admin-sub-label" class="text-[9px] opacity-60 truncate">Worker Mode</p>
+        </div>
+      </button>
+    </div>
+
+    <nav class="flex-1 px-3 space-y-2">
+      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all text-slate-500 hover:bg-slate-800/50 hover:text-slate-200">
+        <i class="fas fa-chart-pie text-lg w-6 text-center"></i>
+        <span class="hidden lg:block font-bold text-sm tracking-tight">Dashboard</span>
+      </button>
+      <button onclick="switchTab('dispatch')" id="nav-dispatch" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all text-slate-500 hover:bg-slate-800/50 hover:text-slate-200">
+        <i class="fas fa-truck-loading text-lg w-6 text-center"></i>
+        <span class="hidden lg:block font-bold text-sm tracking-tight">Dispatch</span>
+      </button>
+      <button onclick="switchTab('inventory')" id="nav-inventory" class="nav-item w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all text-slate-500 hover:bg-slate-800/50 hover:text-slate-200">
+        <i class="fas fa-warehouse text-lg w-6 text-center"></i>
+        <span class="hidden lg:block font-bold text-sm tracking-tight">Inventory</span>
+      </button>
+    </nav>
+
+    <div class="p-6 border-t border-slate-800/50 mt-auto">
+      <div class="hidden lg:flex items-center gap-3 text-slate-600 mb-2 px-1">
+        <i class="fas fa-circle text-[6px] text-emerald-500 animate-pulse"></i>
+        <span class="text-[10px] font-black uppercase tracking-widest">System Online</span>
+      </div>
+      <div class="text-[9px] text-slate-700 hidden lg:block px-1">Factory Pro v3.0</div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col min-w-0 relative h-full overflow-hidden">
+    <div id="admin-stripe" class="hidden absolute top-0 left-0 right-0 h-1 bg-amber-500 z-[60] no-print"></div>
+
+    <!-- Header -->
+    <header class="p-4 lg:p-8 border-b border-slate-200 bg-white no-print shrink-0">
+      <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div>
+          <h1 id="page-title" class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+            Dashboard
+          </h1>
+        </div>
+        
+        <div class="flex flex-1 w-full lg:w-auto items-center gap-3 max-w-2xl">
+          <div class="relative flex-1 group">
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors"></i>
+            <input 
+              id="global-search"
+              type="text"
+              oninput="handleSearch(this.value)"
+              placeholder="Search products or scan code..."
+              class="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all font-medium text-sm"
+            >
+          </div>
+
+          <div id="customer-select-container" class="hidden">
+            <select 
+              id="customer-selector"
+              onchange="handleCustomerChange(this.value)"
+              class="bg-white border border-slate-200 rounded-xl px-4 py-2.5 focus:ring-4 focus:ring-blue-100 outline-none font-bold text-sm min-w-[160px] shadow-sm"
+            >
+              <option value="">All Customers</option>
+            </select>
+          </div>
+
+          <button id="export-btn" onclick="exportData()" class="hidden p-2.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
+            <i class="fas fa-file-export"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- App Views -->
+    <div class="flex-1 overflow-y-auto p-4 lg:p-8" id="view-container">
+      <!-- Views will be injected here via JS -->
+    </div>
+  </main>
+
+  <!-- Modals (Admin, Receipt, Confirmation) -->
+  <div id="modal-container"></div>
+
+  <!-- Print Receipt (Only visible during print) -->
+  <div id="print-receipt" class="print-only fixed inset-0 bg-white p-10 text-black z-[100]"></div>
+
+  <script>
+    // --- State & Defaults ---
+    let state = {
+      activeTab: 'dashboard',
+      isAdmin: false,
+      searchQuery: '',
+      selectedCustomer: '',
+      loadingCart: [],
+      currentReceipt: null,
+      customers: [],
+      products: [],
+      sessions: []
+    };
+
+    const MOCK_CUSTOMERS = [
+      { id: 'c1', name: 'PharmaCore Global' },
+      { id: 'c2', name: 'BioHealth Labs' },
+      { id: 'c3', name: 'NutriSafe Inc.' }
+    ];
+
+    const MOCK_PRODUCTS = [
+      { id: 'p1', name: 'Amoxicillin Carton', code: 'CRT-001', type: 'Carton', customer: 'PharmaCore Global', availableQuantity: 5000, lastProcess: 'Folder Gluer' },
+      { id: 'p2', name: 'Paracetamol Foil', code: 'BLS-002', type: 'Blister Aluminum', customer: 'PharmaCore Global', availableQuantity: 12500, lastProcess: 'Packing' },
+      { id: 'p3', name: 'Vitamin Label', code: 'LBL-010', type: 'Label', customer: 'BioHealth Labs', availableQuantity: 25000, lastProcess: 'Slitting' }
+    ];
+
+    const STORAGE_KEY = 'PRINTTRACK_DATA_V3';
+
+    // --- Initialization ---
+    function init() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        state = { ...state, ...JSON.parse(saved) };
+      } else {
+        state.products = MOCK_PRODUCTS;
+        state.customers = MOCK_CUSTOMERS;
+        save();
+      }
+      render();
+    }
+
+    function save() {
+      const { products, customers, sessions } = state;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ products, customers, sessions }));
+    }
+
+    // --- Actions ---
+    function switchTab(tab) {
+      state.activeTab = tab;
+      state.searchQuery = '';
+      document.getElementById('global-search').value = '';
+      render();
+    }
+
+    function handleSearch(val) {
+      state.searchQuery = val;
+      render();
+    }
+
+    function handleCustomerChange(val) {
+      state.selectedCustomer = val;
+      render();
+    }
+
+    function toggleAdmin() {
+      if (state.isAdmin) {
+        showConfirmation('Logout Admin?', 'You will return to worker mode.', 'Logout', 'warning', () => {
+          state.isAdmin = false;
+          render();
+        });
+      } else {
+        showAdminLogin();
+      }
+    }
+
+    function addToCart(productId, qty) {
+      const product = state.products.find(p => p.id === productId);
+      if (!product || qty <= 0) return;
+
+      if (product.availableQuantity < qty) {
+        alert("Not enough stock!");
+        return;
+      }
+
+      const existing = state.loadingCart.find(i => i.productId === productId);
+      if (existing) {
+        existing.quantity += qty;
+      } else {
+        state.loadingCart.push({
+          productId: product.id,
+          productName: product.name,
+          productCode: product.code,
+          quantity: qty
+        });
+      }
+
+      product.availableQuantity -= qty;
+      render();
+    }
+
+    function removeFromCart(productId) {
+      const item = state.loadingCart.find(i => i.productId === productId);
+      if (item) {
+        const product = state.products.find(p => p.id === productId);
+        if (product) product.availableQuantity += item.quantity;
+        state.loadingCart = state.loadingCart.filter(i => i.productId !== productId);
+      }
+      render();
+    }
+
+    function finalizeDispatch() {
+      if (state.loadingCart.length === 0 || !state.selectedCustomer) return;
+      
+      const newSession = {
+        id: 's-' + Date.now(),
+        customerName: state.selectedCustomer,
+        items: [...state.loadingCart],
+        timestamp: new Date().toLocaleString(),
+        receiptNumber: (state.sessions.length + 1).toString().padStart(4, '0')
+      };
+
+      state.sessions.unshift(newSession);
+      state.loadingCart = [];
+      state.selectedCustomer = '';
+      state.currentReceipt = newSession;
+      save();
+      render();
+      showReceipt(newSession);
+    }
+
+    function deleteProduct(id) {
+      showConfirmation('Delete Product?', 'This cannot be undone.', 'Delete', 'danger', () => {
+        state.products = state.products.filter(p => p.id !== id);
+        save();
+        render();
+      });
+    }
+
+    function updateStock(id, qty) {
+      const p = state.products.find(x => x.id === id);
+      if (p) p.availableQuantity += qty;
+      save();
+      render();
+    }
+
+    function addProduct(e) {
+      e.preventDefault();
+      const form = e.target;
+      const newP = {
+        id: 'p-' + Date.now(),
+        name: form.name.value,
+        code: form.code.value,
+        type: form.type.value,
+        customer: form.customer.value,
+        availableQuantity: parseInt(form.qty.value) || 0,
+        lastProcess: 'Entry'
+      };
+      state.products.push(newP);
+      save();
+      render();
+    }
+
+    // --- UI Rendering ---
+    function render() {
+      const container = document.getElementById('view-container');
+      const title = document.getElementById('page-title');
+      const searchContainer = document.getElementById('customer-select-container');
+      const adminStripe = document.getElementById('admin-stripe');
+      const adminBtn = document.getElementById('admin-btn');
+      const exportBtn = document.getElementById('export-btn');
+
+      // Update Nav
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('bg-blue-600', 'text-white', 'shadow-xl', 'translate-x-1'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.add('text-slate-500'));
+      document.getElementById('nav-' + state.activeTab).classList.add('bg-blue-600', 'text-white', 'shadow-xl', 'translate-x-1');
+      document.getElementById('nav-' + state.activeTab).classList.remove('text-slate-500');
+
+      // Header Logic
+      adminStripe.style.display = state.isAdmin ? 'block' : 'none';
+      exportBtn.style.display = (state.isAdmin && state.activeTab === 'inventory') ? 'block' : 'none';
+      searchContainer.style.display = state.activeTab === 'dispatch' ? 'block' : 'none';
+      
+      // Admin Button Status
+      const adminIconBg = document.getElementById('admin-icon-bg');
+      const adminLockIcon = document.getElementById('admin-lock-icon');
+      const adminStatus = document.getElementById('admin-status-label');
+      const adminSub = document.getElementById('admin-sub-label');
+      
+      if (state.isAdmin) {
+        adminBtn.className = "w-full flex items-center gap-3 p-2.5 rounded-xl transition-all border-2 bg-amber-500/10 border-amber-500/50 text-amber-500";
+        adminIconBg.className = "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-amber-500 text-white";
+        adminLockIcon.className = "fas fa-unlock";
+        adminStatus.innerText = "Admin Portal";
+        adminSub.innerText = "Full Access";
+      } else {
+        adminBtn.className = "w-full flex items-center gap-3 p-2.5 rounded-xl transition-all border-2 bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-500";
+        adminIconBg.className = "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-slate-700 text-slate-500";
+        adminLockIcon.className = "fas fa-lock";
+        adminStatus.innerText = "Login";
+        adminSub.innerText = "Worker Mode";
+      }
+
+      // Customer Dropdown Update
+      const customerSelect = document.getElementById('customer-selector');
+      customerSelect.innerHTML = '<option value="">All Customers</option>' + 
+        state.customers.map(c => `<option value="${c.name}" ${state.selectedCustomer === c.name ? 'selected' : ''}>${c.name}</option>`).join('');
+
+      // View Routing
+      if (state.activeTab === 'dashboard') {
+        title.innerHTML = 'Factory Dashboard';
+        container.innerHTML = renderDashboard();
+      } else if (state.activeTab === 'dispatch') {
+        title.innerHTML = 'Warehouse Dispatch';
+        container.innerHTML = renderDispatch();
+      } else {
+        title.innerHTML = 'Inventory Management';
+        container.innerHTML = renderInventory();
+      }
+    }
+
+    function renderDashboard() {
+      const totalStock = state.products.reduce((acc, p) => acc + p.availableQuantity, 0);
+      const totalLoadedToday = state.sessions.reduce((acc, s) => acc + s.items.reduce((iSum, i) => iSum + i.quantity, 0), 0);
+      
+      return `
+        <div class="space-y-8">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+              <div class="bg-blue-600 w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                <i class="fas fa-boxes text-lg"></i>
+              </div>
+              <div>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Global Stock</p>
+                <p class="text-2xl font-black text-slate-800">${totalStock.toLocaleString()}</p>
+              </div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+              <div class="bg-emerald-500 w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-200">
+                <i class="fas fa-truck text-lg"></i>
+              </div>
+              <div>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dispatched Today</p>
+                <p class="text-2xl font-black text-slate-800">${totalLoadedToday.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+            <h2 class="text-xl font-bold text-slate-800 mb-6">Recent Loading Sessions</h2>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-slate-400 uppercase text-[10px] font-black tracking-widest">
+                    <th class="pb-4">Seq #</th>
+                    <th class="pb-4">Customer</th>
+                    <th class="pb-4">Total Qty</th>
+                    <th class="pb-4 text-right">Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                  ${state.sessions.length ? state.sessions.map(s => `
+                    <tr>
+                      <td class="py-4 font-black text-blue-600">#${s.receiptNumber}</td>
+                      <td class="py-4 font-bold text-slate-800">${s.customerName}</td>
+                      <td class="py-4 font-black">${s.items.reduce((acc, i) => acc + i.quantity, 0).toLocaleString()}</td>
+                      <td class="py-4 text-right text-slate-400 font-medium">${s.timestamp}</td>
+                    </tr>
+                  `).join('') : '<tr><td colspan="4" class="py-10 text-center text-slate-400 italic">No history yet</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDispatch() {
+      let filtered = state.products;
+      if (state.selectedCustomer) filtered = filtered.filter(p => p.customer === state.selectedCustomer);
+      if (state.searchQuery) {
+        const q = state.searchQuery.toLowerCase();
+        filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
+      }
+
+      const cartTotal = state.loadingCart.reduce((acc, i) => acc + i.quantity, 0);
+
+      return `
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          <div class="xl:col-span-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              ${filtered.length ? filtered.map(p => `
+                <div class="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm hover:border-blue-300 transition-all flex flex-col">
+                  <div class="flex justify-between items-start mb-4">
+                    <span class="px-2.5 py-1 text-[9px] font-black uppercase rounded-lg border bg-slate-100 text-slate-600">${p.type}</span>
+                    ${p.availableQuantity < 500 ? '<span class="text-[9px] font-black text-amber-600 uppercase bg-amber-50 px-2 py-1 rounded-lg">Low Stock</span>' : ''}
+                  </div>
+                  <h3 class="text-lg font-bold text-slate-800 mb-1 leading-tight">${p.name}</h3>
+                  <p class="text-[10px] text-slate-400 font-mono tracking-widest mb-4">${p.code}</p>
+                  
+                  <div class="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between gap-4">
+                    <div>
+                      <p class="text-[10px] text-slate-400 uppercase font-black">Available</p>
+                      <p class="text-xl font-black text-slate-800">${p.availableQuantity.toLocaleString()}</p>
+                    </div>
+                    <div class="flex gap-1">
+                      <button onclick="addToCart('${p.id}', 100)" class="px-3 py-2 bg-slate-900 text-white rounded-lg text-[10px] font-black hover:bg-blue-600 transition-colors">+100</button>
+                      <button onclick="addToCart('${p.id}', 500)" class="px-3 py-2 bg-slate-900 text-white rounded-lg text-[10px] font-black hover:bg-blue-600 transition-colors">+500</button>
+                    </div>
+                  </div>
+                </div>
+              `).join('') : '<div class="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-slate-100 text-slate-400 font-bold">No products found</div>'}
+            </div>
+          </div>
+          
+          <div class="xl:col-span-1">
+            <div class="sticky top-0 bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden flex flex-col h-[calc(100vh-140px)]">
+              <div class="p-6 bg-slate-900 text-white">
+                <h2 class="text-xl font-black uppercase tracking-tight">Staging Area</h2>
+                <p class="text-xs text-slate-400">${state.selectedCustomer || 'Select customer to load'}</p>
+              </div>
+              
+              <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                ${state.loadingCart.length ? state.loadingCart.map(i => `
+                  <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 relative group">
+                    <button onclick="removeFromCart('${i.productId}')" class="absolute top-2 right-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><i class="fas fa-times-circle"></i></button>
+                    <p class="text-xs font-bold text-slate-800">${i.productName}</p>
+                    <p class="text-[10px] font-mono text-slate-400">${i.productCode}</p>
+                    <p class="mt-2 text-sm font-black text-blue-600">QTY: ${i.quantity.toLocaleString()}</p>
+                  </div>
+                `).join('') : '<div class="h-40 flex items-center justify-center text-slate-300 italic text-sm">Cart is empty</div>'}
+              </div>
+
+              <div class="p-6 bg-slate-50 border-t border-slate-100">
+                <div class="flex justify-between items-end mb-6">
+                   <div>
+                    <p class="text-[10px] font-black text-slate-400 uppercase">Total Items</p>
+                    <p class="text-2xl font-black text-slate-800">${cartTotal.toLocaleString()}</p>
+                   </div>
+                   <i class="fas fa-truck-loading text-slate-200 text-3xl"></i>
+                </div>
+                <button 
+                  onclick="finalizeDispatch()"
+                  ${(!state.selectedCustomer || state.loadingCart.length === 0) ? 'disabled' : ''}
+                  class="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-lg shadow-blue-200 disabled:opacity-30 disabled:shadow-none hover:bg-blue-700 active:scale-95 transition-all text-xs uppercase tracking-widest"
+                >
+                  Confirm Dispatch
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderInventory() {
+      let filtered = state.products;
+      if (state.searchQuery) {
+        const q = state.searchQuery.toLowerCase();
+        filtered = filtered.filter(p => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
+      }
+
+      return `
+        <div class="space-y-8">
+          ${state.isAdmin ? `
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+              <h2 class="text-xl font-bold text-slate-800 mb-6">Register New Finished Goods</h2>
+              <form onsubmit="addProduct(event)" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <input required name="name" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500" placeholder="Product Description">
+                <input required name="code" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500" placeholder="Product Code">
+                <select name="type" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500">
+                  <option>Carton</option><option>Blister Aluminum</option><option>Label</option><option>Leaflet</option>
+                </select>
+                <select name="customer" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500">
+                  ${state.customers.map(c => `<option>${c.name}</option>`).join('')}
+                </select>
+                <input type="number" name="qty" required class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500" placeholder="Initial Qty">
+                <button type="submit" class="lg:col-start-4 bg-slate-900 text-white font-black rounded-xl hover:bg-blue-600 transition-all">Add to Stock</button>
+              </form>
+            </div>
+          ` : ''}
+
+          <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+             <div class="p-6 border-b border-slate-50 flex justify-between items-center">
+               <h2 class="text-xl font-bold">Stock Inventory</h2>
+               <p class="text-[10px] font-black text-slate-400 uppercase">Live Count</p>
+             </div>
+             <div class="overflow-x-auto">
+               <table class="w-full text-sm">
+                 <thead class="bg-slate-50 text-[10px] font-black uppercase text-slate-400 tracking-widest text-left">
+                   <tr>
+                     <th class="px-6 py-4">Product Details</th>
+                     <th class="px-6 py-4">Customer</th>
+                     <th class="px-6 py-4 text-right">In Warehouse</th>
+                     <th class="px-6 py-4 text-center">Manage</th>
+                   </tr>
+                 </thead>
+                 <tbody class="divide-y divide-slate-50">
+                   ${filtered.map(p => `
+                     <tr class="hover:bg-slate-50 transition-colors">
+                       <td class="px-6 py-4">
+                         <p class="font-bold text-slate-800">${p.name}</p>
+                         <p class="text-[10px] text-slate-400 font-mono tracking-widest">${p.code} • ${p.type}</p>
+                       </td>
+                       <td class="px-6 py-4 text-xs font-bold text-slate-500 uppercase">${p.customer}</td>
+                       <td class="px-6 py-4 text-right font-black text-lg">${p.availableQuantity.toLocaleString()}</td>
+                       <td class="px-6 py-4">
+                         <div class="flex items-center justify-center gap-2">
+                           <div class="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden h-9">
+                             <button onclick="updateStock('${p.id}', -500)" class="px-3 hover:bg-slate-100 transition-colors"><i class="fas fa-minus text-[8px]"></i></button>
+                             <span class="w-12 text-center text-xs font-black">500</span>
+                             <button onclick="updateStock('${p.id}', 500)" class="px-3 hover:bg-slate-100 transition-colors"><i class="fas fa-plus text-[8px]"></i></button>
+                           </div>
+                           ${state.isAdmin ? `<button onclick="deleteProduct('${p.id}')" class="w-9 h-9 text-red-300 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>` : ''}
+                         </div>
+                       </td>
+                     </tr>
+                   `).join('')}
+                 </tbody>
+               </table>
+             </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // --- Modal Logic ---
+    function showAdminLogin() {
+      const modal = document.getElementById('modal-container');
+      modal.innerHTML = `
+        <div id="login-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-backdrop animate-in fade-in duration-200">
+          <div id="login-card" class="bg-white w-full max-w-xs rounded-3xl shadow-2xl overflow-hidden p-8 text-center animate-in zoom-in-95 duration-200">
+            <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+              <i class="fas fa-shield-halved text-2xl"></i>
+            </div>
+            <h2 class="text-xl font-black text-slate-800 uppercase tracking-tight">Admin PIN</h2>
+            <p class="text-xs text-slate-400 mt-2 font-bold uppercase tracking-widest">Enter Security Code</p>
+            <input id="pin-input" type="password" maxlength="4" class="w-full text-center text-3xl tracking-[1em] font-black p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-500 mt-8" placeholder="••••">
+            <div id="pin-error" class="hidden text-red-500 text-[10px] font-black uppercase mt-2">Incorrect PIN</div>
+            <div class="grid grid-cols-2 gap-3 mt-8">
+              <button onclick="closeModal()" class="py-3 px-4 font-black text-slate-400 hover:text-slate-600 uppercase text-xs tracking-widest">Cancel</button>
+              <button onclick="handlePinSubmit()" class="py-4 px-6 bg-slate-900 text-white font-black rounded-2xl shadow-lg hover:bg-blue-600 transition-all text-xs uppercase tracking-widest">Unlock</button>
+            </div>
+            <p class="mt-6 text-[9px] text-slate-300 font-bold uppercase">Default: 1234</p>
+          </div>
+        </div>
+      `;
+      document.getElementById('pin-input').focus();
+    }
+
+    function handlePinSubmit() {
+      const pin = document.getElementById('pin-input').value;
+      if (pin === '1234') {
+        state.isAdmin = true;
+        closeModal();
+        render();
+      } else {
+        const card = document.getElementById('login-card');
+        const error = document.getElementById('pin-error');
+        card.classList.add('shaking');
+        error.classList.remove('hidden');
+        document.getElementById('pin-input').value = '';
+        setTimeout(() => {
+          card.classList.remove('shaking');
+          error.classList.add('hidden');
+        }, 500);
+      }
+    }
+
+    function showConfirmation(title, message, btnText, variant, onConfirm) {
+      const modal = document.getElementById('modal-container');
+      const colors = variant === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-500 hover:bg-amber-600';
+      modal.innerHTML = `
+        <div class="fixed inset-0 z-[110] flex items-center justify-center p-4 modal-backdrop animate-in fade-in duration-200">
+          <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden p-8 text-center animate-in zoom-in-95 duration-200">
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-6 bg-slate-100 text-slate-600">
+              <i class="fas fa-question text-xl"></i>
+            </div>
+            <h2 class="text-xl font-black text-slate-800">${title}</h2>
+            <p class="text-sm text-slate-500 mt-3">${message}</p>
+            <div class="grid grid-cols-2 gap-3 mt-8">
+              <button onclick="closeModal()" class="py-3 px-4 font-black text-slate-400 uppercase text-xs tracking-widest">Cancel</button>
+              <button id="confirm-action-btn" class="py-4 px-6 ${colors} text-white font-black rounded-2xl shadow-lg transition-all text-xs uppercase tracking-widest">${btnText}</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById('confirm-action-btn').onclick = () => {
+        onConfirm();
+        closeModal();
+      };
+    }
+
+    function showReceipt(session) {
+      const modal = document.getElementById('modal-container');
+      const total = session.items.reduce((acc, i) => acc + i.quantity, 0);
+      
+      modal.innerHTML = `
+        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 modal-backdrop animate-in fade-in duration-200 no-print">
+          <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 overflow-hidden">
+            <div class="p-6 border-b border-slate-50 flex justify-between items-center">
+              <h2 class="font-black uppercase tracking-tight text-slate-800">Dispatch Preview</h2>
+              <button onclick="closeModal()" class="text-slate-300 hover:text-slate-600 p-2"><i class="fas fa-times text-lg"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-10 bg-white">
+              <div class="text-center mb-10">
+                <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-200">
+                   <i class="fas fa-print text-white text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-black tracking-tighter text-slate-900 uppercase">PrintTrack Pro</h1>
+                <p class="text-[10px] text-slate-400 uppercase font-black tracking-[0.3em] mt-2">Inventory Dispatch Voucher</p>
+              </div>
+
+              <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 grid grid-cols-2 gap-4 text-xs mb-8">
+                <div>
+                  <p class="text-[10px] text-slate-400 uppercase font-black">Customer</p>
+                  <p class="font-black text-slate-800 text-sm">${session.customerName}</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-[10px] text-slate-400 uppercase font-black">Ref #</p>
+                  <p class="text-xl font-black text-blue-600">#${session.receiptNumber}</p>
+                </div>
+                <div class="col-span-2">
+                  <p class="text-[10px] text-slate-400 uppercase font-black">Dispatch Date</p>
+                  <p class="text-slate-600 font-bold">${session.timestamp}</p>
+                </div>
+              </div>
+
+              <table class="w-full text-xs">
+                <thead>
+                  <tr class="border-b-2 border-slate-900 text-left">
+                    <th class="py-2 font-black uppercase text-[9px] tracking-widest">Description</th>
+                    <th class="py-2 text-right font-black uppercase text-[9px] tracking-widest">Qty</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${session.items.map(i => `
+                    <tr>
+                      <td class="py-4">
+                        <p class="font-bold text-slate-800 text-sm">${i.productName}</p>
+                        <p class="text-[10px] text-slate-400 font-mono mt-0.5">${i.productCode}</p>
+                      </td>
+                      <td class="py-4 text-right font-black text-slate-900 text-sm">${i.quantity.toLocaleString()}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+
+              <div class="mt-8 pt-6 border-t border-dashed border-slate-200 flex justify-between items-center text-slate-800">
+                <span class="font-black uppercase text-[10px] tracking-widest">Total Units Dispatched</span>
+                <span class="text-2xl font-black">${total.toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div class="p-8 bg-slate-50 border-t border-slate-100 flex gap-4">
+              <button onclick="closeModal()" class="flex-1 py-4 font-black text-slate-400 uppercase text-xs tracking-widest">Close</button>
+              <button onclick="window.print()" class="flex-[2] py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl hover:bg-blue-600 transition-all text-xs uppercase tracking-widest flex items-center justify-center gap-3">
+                <i class="fas fa-print"></i>
+                Print Document
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Set up Print-Only version
+      document.getElementById('print-receipt').innerHTML = `
+        <div class="max-w-3xl mx-auto">
+          <div class="text-center mb-10 pb-6 border-b-4 border-black">
+            <h1 class="text-5xl font-black uppercase tracking-tighter mb-1">PrintTrack Pro</h1>
+            <p class="text-sm font-bold uppercase tracking-[0.4em] text-gray-600">Industrial Dispatch Management System</p>
+          </div>
+          
+          <div class="flex justify-between items-start mb-12">
+            <div class="space-y-2">
+              <h2 class="text-xs font-black uppercase text-gray-400">Consignee:</h2>
+              <p class="text-3xl font-black">${session.customerName}</p>
+            </div>
+            <div class="text-right space-y-2">
+              <h2 class="text-xs font-black uppercase text-gray-400">Dispatch Details:</h2>
+              <p class="text-2xl font-black">Voucher #${session.receiptNumber}</p>
+              <p class="text-sm font-medium">${session.timestamp}</p>
+            </div>
+          </div>
+
+          <table class="w-full mb-16">
+            <thead>
+              <tr class="border-b-2 border-black text-left">
+                <th class="py-3 font-black uppercase text-sm">Product Code</th>
+                <th class="py-3 font-black uppercase text-sm">Product Description</th>
+                <th class="py-3 text-right font-black uppercase text-sm">Quantity</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-300">
+              ${session.items.map(item => `
+                <tr>
+                  <td class="py-4 font-mono text-sm">${item.productCode}</td>
+                  <td class="py-4 font-bold text-xl">${item.productName}</td>
+                  <td class="py-4 text-right font-black text-2xl">${item.quantity.toLocaleString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+            <tfoot>
+              <tr class="border-t-4 border-black">
+                <td colSpan="2" class="py-6 font-black uppercase text-lg">Grand Total Dispatched</td>
+                <td class="py-6 text-right font-black text-3xl">
+                  ${total.toLocaleString()}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <div class="mt-20 grid grid-cols-2 gap-32">
+            <div class="text-center">
+              <div class="border-t-2 border-black pt-2">
+                <p class="text-sm font-black uppercase">Warehouse Supervisor</p>
+                <p class="text-[10px] text-gray-400 uppercase mt-1">Full Name & Signature</p>
+              </div>
+            </div>
+            <div class="text-center">
+              <div class="border-t-2 border-black pt-2">
+                <p class="text-sm font-black uppercase">Customer/Driver Acknowledgement</p>
+                <p class="text-[10px] text-gray-400 uppercase mt-1">Full Name & Signature</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-40 text-center text-[10px] text-gray-300 uppercase font-bold tracking-[0.5em]">
+            This is an electronically generated document from PrintTrack Pro Warehouse Dispatch v3.0
+          </div>
+        </div>
+      `;
+    }
+
+    function closeModal() {
+      document.getElementById('modal-container').innerHTML = '';
+    }
+
+    function exportData() {
+      const headers = ['ID', 'Name', 'Code', 'Category', 'Customer', 'Stock'];
+      const rows = state.products.map(p => [p.id, p.name, p.code, p.type, p.customer, p.availableQuantity]);
+      const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].map(e => e.join(",")).join("\n");
+      const link = document.createElement("a");
+      link.setAttribute("href", encodeURI(csvContent));
+      link.setAttribute("download", `inventory_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Init App
+    init();
+
+  </script>
+</body>
+</html>
