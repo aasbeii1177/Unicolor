@@ -1,15 +1,20 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <base href="/print-track/">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0f172a">
-  <title>Unicolor | Warehouse Dispatch</title>
+  <title>Unicolor | Cloud Warehouse</title>
+  
   <link rel="manifest" href="./manifest.json">
-<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2821/2821898.png">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2821/2821898.png">
+  
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -18,6 +23,10 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
     
     body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+    
+    /* Fallback styles */
+    body { background-color: #f8fafc; color: #0f172a; }
+    button { cursor: pointer; }
     
     @media print {
       .no-print { display: none !important; }
@@ -43,29 +52,16 @@
       backdrop-filter: blur(8px);
     }
 
-    .shaking {
-      animation: shake 0.2s ease-in-out 0s 2;
-    }
-
+    .shaking { animation: shake 0.2s ease-in-out 0s 2; }
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
       25% { transform: translateX(-8px); }
       75% { transform: translateX(8px); }
     }
   </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/"
-  }
-}
-</script>
 </head>
 <body class="bg-slate-50 text-slate-900 overflow-hidden h-screen flex">
 
-  <!-- Sidebar -->
   <aside id="sidebar" class="w-20 lg:w-64 bg-slate-900 text-white flex flex-col no-print transition-all duration-300 shrink-0">
     <div class="p-6 flex flex-col items-center lg:items-start gap-4 border-b border-slate-800 mb-6">
       <div class="flex items-center gap-3">
@@ -108,14 +104,13 @@
 
     <div class="p-6 border-t border-slate-800/50 mt-auto">
       <div class="hidden lg:flex items-center gap-3 text-slate-600 mb-2 px-1">
-        <i class="fas fa-circle text-[6px] text-emerald-500 animate-pulse"></i>
-        <span class="text-[10px] font-black uppercase tracking-widest">System Online</span>
+        <i id="connection-status" class="fas fa-circle text-[6px] text-emerald-500 animate-pulse"></i>
+        <span id="connection-text" class="text-[10px] font-black uppercase tracking-widest">Database Linked</span>
       </div>
-      <div class="text-[9px] text-slate-700 hidden lg:block px-1">Unicolor v4.0</div>
+      <div class="text-[9px] text-slate-700 hidden lg:block px-1">Unicolor Cloud v5.0</div>
     </div>
   </aside>
 
-  <!-- Main Content -->
   <main class="flex-1 flex flex-col min-w-0 relative h-full overflow-hidden">
     <div id="admin-stripe" class="hidden absolute top-0 left-0 right-0 h-1 bg-amber-500 z-[60] no-print"></div>
 
@@ -155,14 +150,31 @@
     <div class="flex-1 overflow-y-auto p-4 lg:p-8" id="view-container"></div>
   </main>
 
-  <!-- Modals & Print Area -->
   <div id="modal-container"></div>
   <div id="print-receipt" class="print-only"></div>
 
   <script>
-    // --- Initial Data & State ---
-    const STORAGE_KEY = 'UNICOLOR_V4_STORAGE';
+    // --- 1. FIREBASE CONFIGURATION ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyCQ_AQ5tjP-Vo7LQxmlPo2FAC04sy1JsEg",
+      authDomain: "uniwarehouse-7fae0.firebaseapp.com",
+      projectId: "uniwarehouse-7fae0",
+      storageBucket: "uniwarehouse-7fae0.firebasestorage.app",
+      messagingSenderId: "915359352624",
+      appId: "1:915359352624:web:c67ac816711ca9b7e42af5"
+    };
+
+    // Initialize Firebase
+    try {
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+      console.log("Firebase initialized");
+    } catch (e) {
+      console.error("Firebase init failed:", e);
+      alert("Database Config Error: Check console for details.");
+    }
     
+    // --- 2. STATE ---
     let state = {
       activeTab: 'dashboard',
       inventorySubTab: 'stock',
@@ -170,29 +182,57 @@
       searchQuery: '',
       selectedCustomer: '',
       loadingCart: [],
-      customers: [
-        { id: 'c1', name: 'PharmaCore Global' },
-        { id: 'c2', name: 'BioHealth Labs' }
-      ],
-      products: [
-        { id: 'p1', name: 'Amoxicillin Carton', code: 'CRT-001', type: 'Carton', customer: 'PharmaCore Global', availableQuantity: 5000 },
-        { id: 'p2', name: 'Paracetamol Foil', code: 'BLS-002', type: 'Blister Aluminum', customer: 'PharmaCore Global', availableQuantity: 12500 },
-        { id: 'p3', name: 'Vitamin Label', code: 'LBL-010', type: 'Label', customer: 'BioHealth Labs', availableQuantity: 25000 }
-      ],
-      sessions: []
+      customers: [], // Will load from DB
+      products: [],  // Will load from DB
+      sessions: []   // Will load from DB
     };
 
+    // --- 3. DATABASE SYNC ---
     function init() {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) state = { ...state, ...JSON.parse(saved) };
-      render();
+      const statusIcon = document.getElementById('connection-status');
+      const statusText = document.getElementById('connection-text');
+
+      statusText.innerText = "Connecting...";
+      statusIcon.classList.replace('text-emerald-500', 'text-amber-500');
+
+      // Listen to real-time updates
+      const db = firebase.firestore();
+      db.collection('unicolor').doc('factory_data').onSnapshot((doc) => {
+        if (doc.exists) {
+          const data = doc.data();
+          state.customers = data.customers || [];
+          state.products = data.products || [];
+          state.sessions = data.sessions || [];
+          
+          statusText.innerText = "Live Sync Active";
+          statusIcon.classList.replace('text-amber-500', 'text-emerald-500');
+          render();
+        } else {
+          // Create initial DB if empty
+          statusText.innerText = "Creating DB...";
+          save();
+        }
+      }, (err) => {
+        console.error("Sync Error:", err);
+        statusText.innerText = "Offline Mode";
+        statusIcon.classList.replace('text-emerald-500', 'text-red-500');
+      });
     }
 
     function save() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const db = firebase.firestore();
+      const dataToSave = {
+        customers: state.customers,
+        products: state.products,
+        sessions: state.sessions,
+        lastUpdated: new Date().toISOString()
+      };
+
+      db.collection('unicolor').doc('factory_data').set(dataToSave)
+        .catch(err => console.error("Save failed:", err));
     }
 
-    // --- State Actions ---
+    // --- 4. APP ACTIONS ---
     function switchTab(tab) {
       state.activeTab = tab;
       state.searchQuery = '';
@@ -265,12 +305,17 @@
     function finalizeDispatch() {
       if (state.loadingCart.length === 0 || !state.selectedCustomer) return;
       
+      // NEW LOGIC: Count receipts ONLY for this specific customer
+      const clientHistory = state.sessions.filter(s => s.customerName === state.selectedCustomer);
+      const nextNumber = clientHistory.length + 1;
+      
       const session = {
         id: Date.now().toString(),
         customerName: state.selectedCustomer,
         items: [...state.loadingCart],
         timestamp: new Date().toLocaleString(),
-        receiptNumber: (state.sessions.length + 1).toString().padStart(4, '0')
+        // Format as 001, 002, etc.
+        receiptNumber: nextNumber.toString().padStart(3, '0')
       };
       
       state.sessions.unshift(session);
@@ -622,7 +667,7 @@
                   <path d="M50,65 V55 C50,35 75,35 75,55 V85" fill="none" stroke="#000" stroke-width="15" stroke-linecap="round"/>
                   <path d="M100,55 V85" stroke="#000" stroke-width="15" stroke-linecap="round"/>
                   <circle cx="100" cy="30" r="8" fill="#000"/>
-                </svg>
+               </svg>
             </div>
             <h1 class="text-5xl font-black uppercase tracking-tighter mb-2">UNICOLOR</h1>
             <p class="text-base font-bold uppercase tracking-[0.3em] text-gray-700">PRINTING & PACKAGING DISPATCH VOUCHER</p>
@@ -683,12 +728,15 @@
     // Initialize App
     init();
   </script>
+  
   <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js');
-    });
-  }
-</script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker: Registered'))
+          .catch(err => console.log('Service Worker: Error', err));
+      });
+    }
+  </script>
 </body>
 </html>
